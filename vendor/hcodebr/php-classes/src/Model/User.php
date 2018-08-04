@@ -22,6 +22,7 @@ use \Hcode\Model;
 				if (count($results) ===0)
 				{
 					throw new \Exception("Utilizador inexistente ou senha inválida!!");
+					
 				}
 
 				$data = $results[0];
@@ -68,6 +69,28 @@ use \Hcode\Model;
 
 		$_SESSION[User::SESSION] = NULL;
 	}
+
+	public static function listaAll(){
+
+		$sql = new Sql();
+
+		return $sql->select("SELECT * FROM tb_users a INNER JOIN tb_persons b USING(idperson) ORDER BY b.desperson");
+	}
+
+	public function get($iduser)
+{
+ 
+ $sql = new Sql();
+ 
+ $results = $sql->select("SELECT * FROM tb_users a INNER JOIN tb_persons b USING(idperson) WHERE a.iduser = :iduser;", array(
+ ":iduser"=>$iduser
+ ));
+ 
+ $data = $results[0];
+ 
+ $this->setData($data);
+ 
+ }
 
 	}
 ?>
