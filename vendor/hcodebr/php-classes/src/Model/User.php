@@ -3,12 +3,15 @@
 namespace Hcode\Model;
 
 use \Hcode\DB\Sql;
+use \Hcode\Mailer;
 
 use \Hcode\Model;
 
 	class User extends Model {
 
 		const SESSION = "User";
+
+		const SECRET = "HcodePhp7_Secret";
 
 			public static function login($login, $password){
 
@@ -19,7 +22,7 @@ use \Hcode\Model;
 				));
 
 
-				if (count($results) ===0)
+				if (count($results) === 0)
 				{
 					throw new \Exception("Utilizador inexistente ou senha inválida!!");
 					
@@ -27,7 +30,7 @@ use \Hcode\Model;
 
 				$data = $results[0];
 
-				if (password_verify($password, $data["despassword"]) ===true)
+				if (password_verify($password, $data["despassword"]) === true)
 				{
 					$user = new User();
 
@@ -36,11 +39,10 @@ use \Hcode\Model;
 					$_SESSION[User::SESSION] = $user->getValues();
 
 					return $user;
-					
-
+				
 
 				}else {
-					throw new \Exception("Utilizador inexistente ou senha inválida!!");
+					throw new \Exception("Senha inválida!!");
 				}
 
 			}
@@ -152,6 +154,57 @@ public function delete(){
 
 }
 
+public static function getForgot($email, $inadmin = true){
+
+
+	$sql = new Sql();
+	$results = $sql->select("SELECT * FROM tb_persons a INNER JOIN tb_users b using (idperson) 
+		WHERE a.desemail = :email", array(
+			":email"=>$email
+
+		));
+
+	if (count($results)===0) {
+		
+		throw new \Exception("Não foi possivel recuperar a senha!!");
+		
+	}else{
+
+		$data = $results[0];
+		$results2 = $sql->select("Call sp-userspasswordsrecoveries-create(:iduser, :desip)", array(
+			":iduser" =>$data["iduser"],
+			":desip" => $_SERVER["REMOTE_ADDR"]
+
+
+		));
+
+		if (count($results2) === 0) {
+
+		throw new \Exception("Não foi possível recuperar a senha.");
+
+			
+		}else{
+
+
+			$dataRecovery = $results2[0];
+
+		$code = base64_encode(openssl_encrypt(MCRYPT_RIJNDAEL_128, User::SECRET , $dataRecovery["idrecovery"], MCRYPT_MODE_ECB));
+
+		$link = "http://www.hcodecommerce.com/admin/forgot/reset?code=$code";
+
+		$mailer = new Mailer($data["desemail"], $data["desperson"],"Redefinir Senha Hcode", "forgot", array(
+
+			"name"=>$data["desperson"],
+			"link"=>$link
+		));
+
+		$mailer->send();
+		return $data;
+
+		}
+	}
+
+}
 
 	}
 ?>
